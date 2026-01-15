@@ -1,0 +1,52 @@
+name: Build Android App
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # 1. Buildozer Setup
+      - name: Install Buildozer
+        run: |
+          pip install buildozer
+          sudo apt-get install -y python3-dev libsdl2-dev
+          buildozer init
+
+      # 2. NAME, LOGO & AUDIO SETTINGS
+      - name: Update Spec File
+        run: |
+          # 1. APP NAME (Yahan change karo agar chahiye)
+          sed -i 's/title = My Application/title = Rajput X Bomber/' buildozer.spec
+          sed -i 's/package.name = myapp/package.name = rajputxbomber/' buildozer.spec
+          
+          # 2. APP LOGO (File upload honi chahiye icon.png)
+          sed -i 's/#icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = icon.png/' buildozer.spec
+          
+          # 3. INCLUDE FILES (MP3, HTML, JS add kar rahe hain)
+          sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,jpg,kv,atlas,html,css,js,mp3/' buildozer.spec
+          
+          # 4. REQUIREMENTS
+          sed -i 's/requirements = python3,kivy/requirements = python3,kivy,flask,aiohttp,requests,pyjnius,android/' buildozer.spec
+          
+          # 5. PERMISSIONS
+          sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET/' buildozer.spec
+
+      # 3. Build APK
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          buildozer_version: master
+
+      # 4. Upload APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: SNX-Bomber-APK
+          path: bin/*.apk
