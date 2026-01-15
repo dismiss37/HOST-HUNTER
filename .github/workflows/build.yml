@@ -8,67 +8,70 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Check out code (Updated to v4 to fix Image 1 error)
       - uses: actions/checkout@v4
 
-      # 1. Setup Python (Stability ke liye)
+      # 2. Setup Python (Stability ke liye 3.10 best hai)
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 2. Install System Dependencies (Fixes Image 2 Error)
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential git ffmpeg libsdl2-dev libsdl2-image-dev \
-            libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev \
-            libavformat-dev libavcodec-dev zlib1g-dev libtool autoconf \
-            automake libffi-dev libltdl-dev libssl-dev zip unzip
-
-      # 3. Install Buildozer
-      - name: Install Buildozer & Cython
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33
-
-      # 4. Setup Java (Android Build ke liye zaroori)
+      # 3. Setup Java 17 (Android Builds ke liye zaroori)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 5. Initialize & Configure Spec File
-      - name: Init & Update Spec File
+      # 4. Install System Dependencies (Ye fix karega Image 2 wala error)
+      # 'sudo apt-get update' sabse pehle chalega taaki 404 error na aaye
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git ffmpeg libsdl2-dev libsdl2-image-dev \
+          libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev \
+          libavcodec-dev zlib1g-dev libtool autoconf automake libffi-dev libltdl-dev libssl-dev \
+          zip unzip
+
+      # 5. Install Buildozer Manually (Fixes Image 3 Permission Error)
+      # Hum ArtemSBulgakov action use nahi karenge, khud install karenge
+      - name: Install Buildozer & Cython
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.33
+
+      # 6. Configure buildozer.spec (Settings update karna)
+      - name: Init & Configure Buildozer
         run: |
           buildozer init
           
-          # App Name & Package
+          # App Title & Package Name
           sed -i 's/title = My Application/title = Rajput X Bomber/' buildozer.spec
           sed -i 's/package.name = myapp/package.name = rajputxbomber/' buildozer.spec
           
-          # Icon Setup (Fixes Image 3 logic)
+          # Icon Setup (Agar icon.png hai to use karega)
           sed -i 's/#icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = icon.png/' buildozer.spec
           
-          # Files Include (HTML, MP3, JS sab lega)
+          # Files Include (Sab files add kar rahe hain: HTML, MP3, JS)
           sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,jpg,kv,atlas,html,css,js,mp3/' buildozer.spec
           
-          # Requirements (Zaruri Libraries)
+          # Requirements (Python Libraries)
           sed -i 's/requirements = python3,kivy/requirements = python3,kivy,flask,aiohttp,requests,pyjnius,android/' buildozer.spec
           
-          # Permissions
+          # Permissions (Internet)
           sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET/' buildozer.spec
           
-          # License Agreement (Bahut Zaruri hai CI ke liye)
+          # License Auto-Accept (Bahut Zaroori)
           sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
 
-      # 6. Build APK (Direct Command - Fixes Image 3 Error)
+      # 7. Build APK (Direct Command)
+      # 'yes |' lagaya hai taaki agar license maange to automatic Haan bol de
       - name: Build with Buildozer
         run: |
           yes | buildozer android debug
 
-      # 7. Upload APK (Fixes Image 1 Error)
+      # 8. Upload APK (Updated to v4 to fix Image 1 error)
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
