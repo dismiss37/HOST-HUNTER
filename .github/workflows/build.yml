@@ -8,70 +8,76 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out code (Updated to v4 to fix Image 1 error)
+      # 1. Code Checkout
       - uses: actions/checkout@v4
 
-      # 2. Setup Python (Stability ke liye 3.10 best hai)
+      # 2. Python Setup
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 3. Setup Java 17 (Android Builds ke liye zaroori)
+      # 3. Java Setup (Android ke liye)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 4. Install System Dependencies (Ye fix karega Image 2 wala error)
-      # 'sudo apt-get update' sabse pehle chalega taaki 404 error na aaye
-      - name: Install Dependencies
+      # 4. Install Dependencies (Sabse Zaruri)
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential git ffmpeg libsdl2-dev libsdl2-image-dev \
           libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev \
           libavcodec-dev zlib1g-dev libtool autoconf automake libffi-dev libltdl-dev libssl-dev \
-          zip unzip
+          zip unzip libncurses5 libstdc++6
 
-      # 5. Install Buildozer Manually (Fixes Image 3 Permission Error)
-      # Hum ArtemSBulgakov action use nahi karenge, khud install karenge
-      - name: Install Buildozer & Cython
+      # 5. Install Buildozer
+      - name: Install Buildozer
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      # 6. Configure buildozer.spec (Settings update karna)
-      - name: Init & Configure Buildozer
+      # 6. FORCE CREATE BUILDOZER.SPEC (Magic Step ⚡)
+      # Hum edit nahi kar rahe, hum puri nayi file bana rahe hain taaki galti na ho
+      - name: Create Buildozer Spec
         run: |
-          buildozer init
+          cat > buildozer.spec <<EOF
+          [app]
+          title = Rajput X Bomber
+          package.name = rajputxbomber
+          package.domain = org.snx
+          source.dir = .
+          source.include_exts = py,png,jpg,kv,atlas,html,css,js,mp3
+          version = 1.0
+          requirements = python3,kivy,flask,aiohttp,requests,pyjnius,android
+          orientation = portrait
+          fullscreen = 0
+          android.permissions = INTERNET
+          android.api = 31
+          android.minapi = 21
+          android.ndk = 23b
+          android.accept_sdk_license = True
+          android.archs = arm64-v8a
           
-          # App Title & Package Name
-          sed -i 's/title = My Application/title = Rajput X Bomber/' buildozer.spec
-          sed -i 's/package.name = myapp/package.name = rajputxbomber/' buildozer.spec
+          # Icon Setting
+          icon.filename = icon.png
           
-          # Icon Setup (Agar icon.png hai to use karega)
-          sed -i 's/#icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = icon.png/' buildozer.spec
-          
-          # Files Include (Sab files add kar rahe hain: HTML, MP3, JS)
-          sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,jpg,kv,atlas,html,css,js,mp3/' buildozer.spec
-          
-          # Requirements (Python Libraries)
-          sed -i 's/requirements = python3,kivy/requirements = python3,kivy,flask,aiohttp,requests,pyjnius,android/' buildozer.spec
-          
-          # Permissions (Internet)
-          sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET/' buildozer.spec
-          
-          # License Auto-Accept (Bahut Zaroori)
-          sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          [buildozer]
+          log_level = 2
+          warn_on_root = 1
+          EOF
 
-      # 7. Build APK (Direct Command)
-      # 'yes |' lagaya hai taaki agar license maange to automatic Haan bol de
+      # 7. Build APK (Clean Build)
       - name: Build with Buildozer
         run: |
+          # Pehle purana kachra saaf karenge
+          buildozer android clean
+          # Fir naya APK banayenge
           yes | buildozer android debug
 
-      # 8. Upload APK (Updated to v4 to fix Image 1 error)
+      # 8. Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
