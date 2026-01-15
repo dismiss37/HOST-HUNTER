@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Code Checkout
+      # 1. Checkout Code
       - uses: actions/checkout@v4
 
       # 2. Python Setup
@@ -17,21 +17,21 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 3. Java Setup (Android ke liye)
+      # 3. Java Setup
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 4. Install Dependencies (Sabse Zaruri)
+      # 4. Install Dependencies (FIXED: Removed 'libncurses5')
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential git ffmpeg libsdl2-dev libsdl2-image-dev \
           libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev \
           libavcodec-dev zlib1g-dev libtool autoconf automake libffi-dev libltdl-dev libssl-dev \
-          zip unzip libncurses5 libstdc++6
+          zip unzip
 
       # 5. Install Buildozer
       - name: Install Buildozer
@@ -39,8 +39,7 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      # 6. FORCE CREATE BUILDOZER.SPEC (Magic Step ⚡)
-      # Hum edit nahi kar rahe, hum puri nayi file bana rahe hain taaki galti na ho
+      # 6. Create Buildozer Spec (Automatic Settings)
       - name: Create Buildozer Spec
         run: |
           cat > buildozer.spec <<EOF
@@ -55,9 +54,9 @@ jobs:
           orientation = portrait
           fullscreen = 0
           android.permissions = INTERNET
-          android.api = 31
+          android.api = 33
           android.minapi = 21
-          android.ndk = 23b
+          android.ndk = 25b
           android.accept_sdk_license = True
           android.archs = arm64-v8a
           
@@ -69,12 +68,9 @@ jobs:
           warn_on_root = 1
           EOF
 
-      # 7. Build APK (Clean Build)
+      # 7. Build APK
       - name: Build with Buildozer
         run: |
-          # Pehle purana kachra saaf karenge
-          buildozer android clean
-          # Fir naya APK banayenge
           yes | buildozer android debug
 
       # 8. Upload APK
