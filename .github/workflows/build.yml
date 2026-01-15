@@ -1,31 +1,26 @@
-name: Build Android App
+name: Build Universal Android App
 on:
   push:
     branches: [ main ]
 
 jobs:
   build:
-    # 1. STABLE OS (Ye sabse zaruri hai)
     runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
 
-      # 2. Setup Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 3. Setup Java 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 4. Install Dependencies
-      # Ubuntu 22.04 par ye sab available hai, error nahi aayega
       - name: Install System Dependencies
         run: |
           sudo apt-get update
@@ -34,13 +29,12 @@ jobs:
           libavcodec-dev zlib1g-dev libtool autoconf automake libffi-dev libltdl-dev libssl-dev \
           zip unzip autopoint gettext
 
-      # 5. Install Buildozer
       - name: Install Buildozer
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      # 6. Create Buildozer Spec (Automatic Settings)
+      # --- YAHAN CHANGE KIYA HAI (Universal Settings) ---
       - name: Create Buildozer Spec
         run: |
           cat > buildozer.spec <<EOF
@@ -51,33 +45,38 @@ jobs:
           source.dir = .
           source.include_exts = py,png,jpg,kv,atlas,html,css,js,mp3
           version = 1.0
-          requirements = python3,kivy,flask,aiohttp,requests,pyjnius,android
+          
+          # Requirements mein 'urllib3' aur 'chardet' bhi add kiya hai taaki crash na ho
+          requirements = python3,kivy,flask,aiohttp,requests,pyjnius,android,urllib3,chardet,idna,certifi
+          
           orientation = portrait
           fullscreen = 0
-          android.permissions = INTERNET
+          android.permissions = INTERNET, ACCESS_NETWORK_STATE, WAKE_LOCK
           android.api = 33
           android.minapi = 21
           android.ndk = 25b
           android.accept_sdk_license = True
-          android.archs = arm64-v8a
+          
+          # MAGIC FIX: 32-bit aur 64-bit dono support karega
+          android.archs = arm64-v8a, armeabi-v7a
           
           # Icon Setting
           icon.filename = icon.png
+          
+          # Startup Splash (Optional)
+          # presplash.filename = icon.png
           
           [buildozer]
           log_level = 2
           warn_on_root = 1
           EOF
 
-      # 7. Build APK (Direct Debug - No Clean)
-      # Maine 'clean' hata diya hai jo error de raha tha
       - name: Build with Buildozer
         run: |
           yes | buildozer android debug
 
-      # 8. Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SNX-Bomber-APK
+          name: SNX-Universal-APK
           path: bin/*.apk
