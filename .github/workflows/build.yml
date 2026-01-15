@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       # 1. Buildozer Setup
       - name: Install Buildozer
@@ -20,11 +20,12 @@ jobs:
       # 2. NAME, LOGO & AUDIO SETTINGS
       - name: Update Spec File
         run: |
-          # 1. APP NAME (Yahan change karo agar chahiye)
+          # 1. APP NAME
           sed -i 's/title = My Application/title = Rajput X Bomber/' buildozer.spec
           sed -i 's/package.name = myapp/package.name = rajputxbomber/' buildozer.spec
           
-          # 2. APP LOGO (File upload honi chahiye icon.png)
+          # 2. APP LOGO (Agar icon.png upload kiya hai to hi ye line chalegi)
+          # Agar error aaye to is line ke aage # laga dena
           sed -i 's/#icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = icon.png/' buildozer.spec
           
           # 3. INCLUDE FILES (MP3, HTML, JS add kar rahe hain)
@@ -44,9 +45,9 @@ jobs:
           command: buildozer android debug
           buildozer_version: master
 
-      # 4. Upload APK
+      # 4. Upload APK (FIXED: v4 version use kiya hai)
       - name: Upload APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: SNX-Bomber-APK
           path: bin/*.apk
